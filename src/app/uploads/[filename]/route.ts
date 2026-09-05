@@ -25,9 +25,17 @@ export async function GET(
 
     // Prevent path traversal
     const safeFilename = path.basename(filename);
-    const filePath = path.join(process.cwd(), 'public', 'uploads', safeFilename);
+    let filePath = path.join(process.cwd(), 'public', 'uploads', safeFilename);
 
-    const buffer = await readFile(filePath);
+    let buffer: Buffer;
+    try {
+      buffer = await readFile(filePath);
+    } catch {
+      // Fallback sang /tmp/uploads neu file duoc upload tren Vercel
+      filePath = path.join('/tmp', 'uploads', safeFilename);
+      buffer = await readFile(filePath);
+    }
+
 
     const ext = path.extname(safeFilename).toLowerCase();
     let contentType = 'application/octet-stream';
@@ -41,7 +49,7 @@ export async function GET(
     else if (ext === '.obj') contentType = 'text/plain';
     else if (ext === '.stl') contentType = 'model/stl';
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Length': buffer.length.toString(),
@@ -49,6 +57,7 @@ export async function GET(
         ...CORS_HEADERS
       }
     });
+
   } catch {
     return new NextResponse('File Not Found', {
       status: 404,

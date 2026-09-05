@@ -35,16 +35,22 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure public/uploads directory exists
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Generate clean unique filename
+    // Thu muc upload: uu tien public/uploads (local), fallback /tmp/uploads (Vercel Serverless)
+    let uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     const cleanBase = path.basename(file.name, ext).replace(/[^a-z0-9]/gi, '_');
     const fileName = `${cleanBase}_${Date.now()}${ext}`;
-    const filePath = path.join(uploadsDir, fileName);
+    let filePath = path.join(uploadsDir, fileName);
 
-    await writeFile(filePath, buffer);
+    try {
+      await mkdir(uploadsDir, { recursive: true });
+      await writeFile(filePath, buffer);
+    } catch (fsErr) {
+      console.warn('[Upload] Khong the ghi vao public/uploads (Read-only filesystem tren Vercel), fallback sang /tmp/uploads:', fsErr);
+      uploadsDir = path.join('/tmp', 'uploads');
+      await mkdir(uploadsDir, { recursive: true });
+      filePath = path.join(uploadsDir, fileName);
+      await writeFile(filePath, buffer);
+    }
 
     const publicUrl = `/uploads/${fileName}`;
 
@@ -53,6 +59,7 @@ export async function POST(req: NextRequest) {
       url: publicUrl,
       fileName
     });
+
 
   } catch (error: unknown) {
     return NextResponse.json({ error: getErrorMessage(error, 'Lỗi lưu tệp ảnh' )}, { status: 500 });
