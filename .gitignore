@@ -1,41 +1,7 @@
-# ==============================================================================
-# BẢO MẬT & QUY TẮC BỎ QUA FILE KHI ĐẨY LÊN GITHUB (GITIGNORE)
-# ==============================================================================
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# 1. Cơ sở dữ liệu & SQLite (Tuyệt đối không public chứa mật khẩu hash và data)
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-prisma/*.db
-prisma/*.db-journal
-prisma/*.db-shm
-prisma/*.db-wal
-
-# 2. File môi trường & Khóa bí mật (Chỉ public .env.example)
-.env
-.env*
-!.env.example
-.env*.local
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# 3. Thư mục tệp tải lên động của người dùng (Chỉ giữ thư mục rỗng với .gitkeep)
-public/uploads/*
-!public/uploads/.gitkeep
-
-# 4. Thư mục bảo mật lưu trữ CAD gốc & Private storage
-cad-vault/
-storage/cad-vault/
-storage/private/
-
-# 5. Thư viện Dependencies
+# dependencies
 /node_modules
-node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -44,38 +10,36 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# 6. Next.js & Build Output
+# testing
+/coverage
+
+# next.js
 /.next/
 /out/
-/build
-dist/
-*.tsbuildinfo
-next-env.d.ts
 
-# 7. Nhật ký & Debug Logs
-*.log
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# 8. Testing & Coverage
-/coverage
+# env files
+.env*
+!.env.example
 
-# 9. Cloud Platform / Vercel
+# vercel
 .vercel
 
-# 10. Hệ điều hành & Công cụ phát triển (OS & IDE)
-.DS_Store
-Thumbs.db
-desktop.ini
-*.pem
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-temp/
-tmp/
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+node_modules/
+dist/
+.env
