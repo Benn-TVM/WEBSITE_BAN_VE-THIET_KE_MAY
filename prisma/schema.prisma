@@ -1,0 +1,301 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique // ADMIN, TECHNICAL, SALES, USER
+  description String?
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    Int              @id @default(autoincrement())
+  code  String           @unique
+  name  String
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  phone        String?
+  passwordHash String
+  roleId       Int
+  role         Role             @relation(fields: [roleId], references: [id])
+  status       String           @default("ACTIVE")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  orders       Order[]
+  licenses     License[]
+  downloads    Download[]
+  favorites    Favorite[]
+  auditLogs    AuditLog[]
+  carts        Cart[]
+  versions     Version[]        @relation("CreatedVersions")
+  supports     SupportRequest[]
+}
+
+model Category {
+  id          Int               @id @default(autoincrement())
+  name        String
+  slug        String            @unique
+  parentId    Int?
+  type        String            @default("MACHINE")
+  description String?
+  status      String            @default("ACTIVE")
+  parent      Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[]        @relation("CategoryHierarchy")
+  products    ProductCategory[]
+}
+
+model Product {
+  id             Int               @id @default(autoincrement())
+  productName    String
+  productCode    String
+  cadCode        String            @unique
+  slug           String            @unique
+  productType    String            @default("COMPLETE_MACHINE") // COMPLETE_MACHINE, PART_DRAWING, BUNDLE
+  description    String?
+  technicalSpecs String?
+  rightsStatus   String            @default("OWNED") // OWNED, LICENSED, AUTHORIZED, UNKNOWN, NOT_FOR_SALE
+  status         String            @default("DRAFT") // DRAFT, UNDER_REVIEW, PUBLISHED, SOLD_OUT, ARCHIVED, DISABLED
+  featured       Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  categories     ProductCategory[]
+  packages       ProductPackage[]
+  versions       Version[]
+  files          File[]
+  assets         ProductAsset[]
+  orderItems     OrderItem[]
+  licenses       License[]
+  downloads      Download[]
+  favorites      Favorite[]
+  cartItems      CartItem[]
+}
+
+model ProductCategory {
+  productId  Int
+  categoryId Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+}
+
+model ProductAsset {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  assetType String  @default("IMAGE") // IMAGE, PREVIEW_PDF, VIDEO
+  url       String
+  isPreview Boolean @default(false)
+  watermark Boolean @default(false)
+}
+
+model ProductPackage {
+  id          Int         @id @default(autoincrement())
+  productId   Int
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  packageName String
+  packageCode String
+  price       Float
+  description String?
+  status      String      @default("ACTIVE")
+  files       File[]
+  orderItems  OrderItem[]
+  licenses    License[]
+  cartItems   CartItem[]
+}
+
+model Version {
+  id          Int        @id @default(autoincrement())
+  productId   Int
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  version     String     @default("V1.0")
+  changeNote  String?
+  createdById Int
+  createdBy   User       @relation("CreatedVersions", fields: [createdById], references: [id])
+  releasedAt  DateTime   @default(now())
+  status      String     @default("ACTIVE")
+  files       File[]
+  downloads   Download[]
+}
+
+model File {
+  id             Int            @id @default(autoincrement())
+  productId      Int
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  packageId      Int?
+  package        ProductPackage? @relation(fields: [packageId], references: [id])
+  versionId      Int
+  version        Version        @relation(fields: [versionId], references: [id])
+  fileName       String
+  fileType       String
+  folderCategory String         @default("01_GENERAL")
+  storagePath    String
+  fileSize       Int            @default(0)
+  checksum       String?
+  visibility     String         @default("PRIVATE") // PUBLIC, PRIVATE
+  createdAt      DateTime       @default(now())
+  downloads      Download[]
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int            @id @default(autoincrement())
+  cartId    Int
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product        @relation(fields: [productId], references: [id])
+  packageId Int
+  package   ProductPackage @relation(fields: [packageId], references: [id])
+  quantity  Int            @default(1)
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  orderCode     String      @unique
+  subtotal      Float
+  discount      Float       @default(0)
+  total         Float
+  paymentStatus String      @default("PENDING") // PENDING, PAID, CANCELLED, REFUNDED
+  orderStatus   String      @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+  payments      Payment[]
+  licenses      License[]
+  downloads     Download[]
+  supports      SupportRequest[]
+}
+
+model OrderItem {
+  id        Int            @id @default(autoincrement())
+  orderId   Int
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product        @relation(fields: [productId], references: [id])
+  packageId Int
+  package   ProductPackage @relation(fields: [packageId], references: [id])
+  price     Float
+  quantity  Int            @default(1)
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  orderId         Int
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method          String   @default("VIETQR")
+  transactionCode String?
+  amount          Float
+  status          String   @default("PENDING")
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+}
+
+model License {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id])
+  orderId       Int
+  order         Order         @relation(fields: [orderId], references: [id])
+  productId     Int
+  product       Product       @relation(fields: [productId], references: [id])
+  packageId     Int
+  package       ProductPackage @relation(fields: [packageId], references: [id])
+  validFrom     DateTime      @default(now())
+  validUntil    DateTime
+  downloadLimit Int           @default(5)
+  downloadCount Int           @default(0)
+  status        String        @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  createdAt     DateTime      @default(now())
+}
+
+model Download {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  orderId      Int?
+  order        Order?   @relation(fields: [orderId], references: [id])
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id])
+  fileId       Int
+  file         File     @relation(fields: [fileId], references: [id])
+  versionId    Int
+  version      Version  @relation(fields: [versionId], references: [id])
+  downloadedAt DateTime @default(now())
+  ipAddress    String   @default("127.0.0.1")
+  userAgent    String?
+  status       String   @default("SUCCESS")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  module    String
+  targetId  Int?
+  oldValue  String?
+  newValue  String?
+  ipAddress String   @default("127.0.0.1")
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique
+  value       String
+  description String?
+}
+
+model SupportRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   Int?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  subject   String
+  message   String
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+}
