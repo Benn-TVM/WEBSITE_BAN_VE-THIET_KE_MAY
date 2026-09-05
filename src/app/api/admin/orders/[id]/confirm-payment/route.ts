@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
