@@ -187,13 +187,21 @@ export default function WatermarkPreviewPlayer({
     CAD: false
   });
 
+  const isInteractive3D = (url?: string) => {
+    if (!url) return false;
+    const clean = url.split('?')[0].toLowerCase();
+    return clean.endsWith('.glb') || clean.endsWith('.gltf') || clean.endsWith('.obj') || clean.endsWith('.stl');
+  };
+
   const currentItem = galleryItems.find((item) => item.id === activeView) ?? galleryItems[0];
-  const visibleImage = currentItem.id !== '3D' && currentItem.image && !failedViews[currentItem.id]
+  const hasInteractive3D = isInteractive3D(model3d);
+  const visibleImage = (currentItem.id !== '3D' || !hasInteractive3D) && currentItem.image && !failedViews[currentItem.id]
     ? currentItem.image
     : null;
 
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 25, 200));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 25, 75));
+
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
@@ -210,8 +218,8 @@ export default function WatermarkPreviewPlayer({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleZoomOut}
-            className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors shadow-sm"
-            title="Thu nho"
+            className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors shadow-sm cursor-pointer"
+            title="Thu nhỏ"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -220,8 +228,8 @@ export default function WatermarkPreviewPlayer({
           </span>
           <button
             onClick={handleZoomIn}
-            className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors shadow-sm"
-            title="Phong to"
+            className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors shadow-sm cursor-pointer"
+            title="Phóng to"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -232,7 +240,7 @@ export default function WatermarkPreviewPlayer({
         <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-6 opacity-30 -rotate-12 scale-110">
           {[0, 1, 2].map((item) => (
             <div key={item} className="text-center font-black text-slate-400 text-xl tracking-widest uppercase">
-              KTP CAD - BAN QUYEN GOC - {cadCode}
+              KTP CAD - BẢN QUYỀN GỐC - {cadCode}
             </div>
           ))}
         </div>
@@ -241,7 +249,7 @@ export default function WatermarkPreviewPlayer({
           className="w-full h-full flex items-center justify-center p-4 transition-transform duration-200"
           style={{ transform: `scale(${zoomLevel / 100})` }}
         >
-          {currentItem.id === '3D' && model3d && !failedViews['3D'] ? (
+          {currentItem.id === '3D' && hasInteractive3D && model3d && !failedViews['3D'] ? (
             <CadModelViewer modelUrl={model3d} cadCode={cadCode} />
           ) : visibleImage ? (
             <img
@@ -257,12 +265,13 @@ export default function WatermarkPreviewPlayer({
                 <ImageOff className="w-8 h-8 text-slate-400" />
               </div>
               <div className="font-bold text-sm text-slate-600">
-                {currentItem.id === '3D' ? 'Chua co file 3D preview' : currentItem.fallbackTitle}
+                {currentItem.id === '3D' ? 'Chưa có mô hình 3D tương tác cho sản phẩm này' : currentItem.fallbackTitle}
               </div>
               <div className="text-xs text-slate-400 font-mono">{cadCode}</div>
             </div>
           )}
         </div>
+
 
         <div className="absolute bottom-3 right-3 z-30 bg-white/90 border border-slate-200 text-slate-700 text-[10px] px-2.5 py-1 rounded-md flex items-center gap-1.5 backdrop-blur-md shadow-sm">
           <ShieldAlert className="w-3.5 h-3.5 text-[#3583b2]" />

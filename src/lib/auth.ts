@@ -45,11 +45,14 @@ export async function getSessionUser(): Promise<TokenPayload | null> {
   return await verifyToken(token);
 }
 
+// Chỉ bật cờ Secure khi thực sự đang chạy HTTPS, tránh chặn cookie khi truy cập qua IP mạng LAN (http://192.168.x.x:3000)
+const isHttps = process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_APP_URL?.startsWith('https') === true;
+
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set('ktp_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
@@ -60,9 +63,10 @@ export async function clearAuthCookie() {
   const cookieStore = await cookies();
   cookieStore.set('ktp_token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge: 0,
     path: '/',
   });
 }
+
